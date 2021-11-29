@@ -3,43 +3,40 @@
 #include<stdlib.h>
 #include<time.h>
 
-char titulo(char texto[256], char caractere){
+void titulo(char texto[256], char caractere){
     int x;
     int tam;
     tam=strlen(texto);
 
+    printf(" ");
     for(x=1; x<=tam+4; x++)
         printf("%c", caractere);
     printf("\n");
 
     printf("  %s  \n",texto);
 
+    printf(" ");
     for(x=1; x<=tam+4; x++)
         printf("%c",caractere);
     printf("\n");
 }
-/**
-int calIdade(int){
-
-}
-**/
 
 struct dados_cliente {
     char nome[100];
-    char sobrenome[100];
-    int cpf;
-    int telefone;
-    char endereco[100];
+    char cpf[100];
+    char telefone[100];
+    char endereco[255];
     char rua[100];
     char numero[4];
     char bairro[100];
     char cidade[100];
     char estado[100];
     char cep[8];
-    char dtNasc[100];
     char email[100];
     char dtDiag[100];
     char comorbidade[100];
+    int dtNasc;
+    int idade;
 };
 
 FILE* AbreArquivo(char modo, char caminho[30]){
@@ -62,15 +59,11 @@ FILE* AbreArquivo(char modo, char caminho[30]){
     return arquivo;
 }
 
-void FecharArquivo(FILE *arquivo){
-    fclose(arquivo);
-}
-
 void gravarLogin(){
     char email[100];
     char senha[100];
     char confsenha[100];
-    FILE *arquivo;
+    FILE *arq;
 
     do{
         printf("\n Digite seu e-mail: ");
@@ -83,13 +76,14 @@ void gravarLogin(){
         if(strcmp(senha,confsenha)!=0){
             printf("\n Erro ao confirmar senha, digite novamente.\n");
         }
-
     }
     while(strcmp(senha,confsenha)!=0);
 
-    arquivo = AbreArquivo('a', "login.txt");
-    fprintf(arquivo, "%s %s\n", email, senha);
-    FecharArquivo(arquivo);
+    arq = AbreArquivo('a', "login.txt");
+
+    fprintf(arq, "1;%s;%s\n", email, senha);
+
+    fclose(arq);
 
     printf("\n");
     system("pause");
@@ -99,44 +93,41 @@ int validarLogin(){
     char email[100];
     char senha[100];
 
+    FILE *arquivo;
+
     printf("\n *Login*\n");
     printf("\n Digite seu e-mail: ");
     scanf("%s", &email);
     printf(" Digite sua senha: ");
     scanf("%s", &senha);
 
-    //Buscar e-mail e senha em um arquivo que contém todos os login.
-    //Se existir o e-mail e senha então vai retornar 1
-
     return 1;
 }
 
 void formularioCliente(){
     struct dados_cliente cliente;
+    FILE *arq;
+
+    char respComo;
+    int indexComo;
+    int dtNasc;
     char arrComorbidade[][13]={"","diabetes"
         ,"obesidade"
         ,"hipertensao"
         ,"tuberculose"
         ,"outros"};
 
-    char respComo;
-    int indexComo;
-
     titulo("INFORMACOES PESSOAIS", '*');
 
-    printf("\n Digite o nome e o sobrenome: ");
-    scanf("%s %s", &cliente.nome, &cliente.sobrenome);
-
-    printf(" Digite o seu CPF: ");
-    scanf("%d", &cliente.cpf);
-
-    printf(" Digite o seu telefone: ");
-    scanf("%d", &cliente.telefone);
-
-    printf(" Digite sua data de nascimento: ");
-    scanf("%s", &cliente.dtNasc);
-
-    printf(" Digite a data que voce foi diagnosticado: ");
+    printf(" Digite o nome e o sobrenome: ");
+    gets(cliente.nome);
+    printf(" Digite o seu CPF ___.___.___-__: ");
+    gets(cliente.cpf);
+    printf(" Digite o seu telefone (__)____-____: ");
+    gets(cliente.telefone);
+    printf(" Digite ANO em que voce nasceu: ");
+    scanf("%d", &cliente.dtNasc);
+    printf(" Digite a data que voce foi diagnosticado __/__/____: ");
     scanf("%s", &cliente.dtDiag);
 
     printf("\n Possui alguma comorbidade?(s/n): ");
@@ -146,55 +137,95 @@ void formularioCliente(){
         for(int i = 1; i <= 5; i++){
             printf(" [%d] %s.\n", i, arrComorbidade[i]);
         }
-    }
 
-    printf("\n Digite um numero correspondente: ");
-    scanf("%d", &indexComo);
-    strcpy(cliente.comorbidade,arrComorbidade[indexComo]);
+        printf("\n Digite um numero correspondente: ");
+        scanf("%d", &indexComo);
+        strcpy(cliente.comorbidade,arrComorbidade[indexComo]);
+
+        printf(" Voce selecionou: %s", cliente.comorbidade);
+    }
 
     printf("\n");
 
     titulo("FORMULARIO ENDERECO", '*');
 
-    printf("\n Digite sua rua: ");
-    scanf("%s", &cliente.rua);
-
-    printf("\n Digite o numero: ");
-    scanf("%s", &cliente.numero);
-
-    printf("\n Digite seu bairro: ");
-    scanf("%s", &cliente.bairro);
-
+    printf("\n Digite o endereco (Rua, numero, bairro): ");
+    gets(cliente.endereco);
     printf("\n Digite sua cidade: ");
-    scanf("%s", &cliente.cidade);
+    gets(cliente.cidade);
+    printf(" Digite o seu estado: ");
+    gets(cliente.estado);
+    printf(" Digite seu o CEP _____-___: ");
+    gets(cliente.cep);
 
-    printf("\n Digite o seu estado: ");
-    scanf("%s", &cliente.estado);
+    dtNasc = cliente.dtNasc;
+    cliente.idade = calIdade(dtNasc);
 
-    printf("\n Digite seu o CEP: ");
-    scanf("%s", &cliente.cep);
+    arq = AbreArquivo('a', "grupoderisco.txt");
+
+    fprintf(arq,"1;%s;%s;%s;%d;%d;%s;%s;%s;%s;%s;%s\n",
+            cliente.nome,
+            cliente.cpf,
+            cliente.telefone,
+            cliente.dtNasc,
+            cliente.idade,
+            cliente.dtDiag,
+            cliente.comorbidade,
+            cliente.endereco,
+            cliente.cidade,
+            cliente.estado,
+            cliente.cep);
+
+    fclose(arq);
+
 }
 
-void calIdade(){
-    struct tm *data_hora_atual;
+void calIdade(int dtNasc){
+    int idade;
+    struct tm *ano;
     time_t segundos;
     time(&segundos);
 
-    data_hora_atual=localtime(&segundos);
+    ano=localtime(&segundos);
 
-    printf("\n Ano atual: %d", data_hora_atual->tm_year+1900);
+    idade = (ano->tm_year+1900) - dtNasc;
 
-    /**
-        Calcular idade
-    **/
-
-
+    return idade;
 }
+void buscarLogin(){
+    FILE *arq;
+    char Linha[255];
+    int i = 1;
+    char *result;
+    char cod[2];
 
+    arq = AbreArquivo('l',"login.txt");
+
+    if (arq == NULL)  // Se houve erro na abertura
+    {
+        printf("Problemas na abertura do arquivo\n");
+        return;
+    }
+
+    while (!feof(arq)){
+        if(fgets(Linha, 255, arq))
+            for(int l=0;l<=strlen(Linha);l++){
+                cod[l] = Linha[l];
+
+                if(Linha[l]==';'){
+
+                    break;
+                }
+            }
+        i++;
+    }
+
+    printf("%s", cod);
+
+    fclose(arq);
+}
 void main(){
-
-    /**calIdade();
-/**
+    struct dados_cliente cliente;
     char resp;
 
     titulo("Bem vindo ao sistema de cadastro", '*');
@@ -215,47 +246,6 @@ void main(){
 
         formularioCliente();
     }
-**/
 
-    char str[11];
-    int len;
-    char dia[10];
-    char mes[10];
-    char ano[10];
-    char teste;
-
-    strcpy(str,"05/03/1998\0");
-    len = strlen(str);
-
-    for(int i=0;i<=len;i++){
-        if(str[i]!='/'){
-            if(i<2){
-                char cpy[2];
-                printf("%c",str[i]);
-                strcpy(cpy,str[i]);
-
-                printf("%c",cpy);
-
-                strncat(dia,&cpy,1);
-                printf("> %s\n", dia);
-            }else if(i>2&&i<5){
-                strncat(mes,&str[i],1);
-                printf(">> %d\n",str);
-            }
-            else{
-                strncat(ano,&str[i],1);
-                printf(">>> %d\n",str);
-            }
-        }
-    }
-
-    //for(int i=0;i<=strlen(mes);i++){
-    //  printf("%c\n",mes[i]);
-    //}
-
-    //printf(" %d\n",strlen(str));
-    //printf(" dia: %s\n",dia);
-    //printf(" mes: %s\n",mes);
-    //printf(" ano: %s\n",ano);
-    //formularioCliente();
+    //buscarLogin();
 }
